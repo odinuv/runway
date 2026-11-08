@@ -1,0 +1,13 @@
+.superpowers/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+pipeline/.env
+pipeline/.venv/
+__pycache__/
+.pytest_cache/
+app/.dart-defines.json
+app/build/
+app/.dart_tool/
