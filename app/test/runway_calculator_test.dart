@@ -187,4 +187,26 @@ void main() {
     expect(r.scenarios, hasLength(3));
     expect(r.scenarios.every((s) => s.runwayMonths == null), isTrue);
   });
+
+  test('absurdly long runway shown as infinite', () {
+    final r = calculateRunway(
+      doc([e(DateTime(2026, 10, 26), -10000.40, need: 'nezbytné')]),
+      input(savings: 1500000, income: 10000),
+    );
+    expect(scenario(r, Scenario.essentialOnly).runwayMonths, isNull);
+  });
+
+  test('depletion date clamps day to month length', () {
+    final r = calculateRunway(
+      doc([e(DateTime(2026, 10, 26), -10000, need: 'nezbytné')]),
+      RunwayInput(
+        savings: 10000,
+        newMonthlyIncome: 0,
+        windowMonths: 12,
+        includeUnexpected: false,
+        today: DateTime(2027, 1, 31),
+      ),
+    );
+    expect(scenario(r, Scenario.essentialOnly).depletionDate, DateTime(2027, 2, 28));
+  });
 }

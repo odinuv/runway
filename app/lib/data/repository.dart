@@ -36,11 +36,19 @@ EntriesDocument _parse(String body) =>
 
 /// Stahuje `entries.json` (jen čtení) a drží jeho poslední kopii v lokální cache.
 class EntriesRepository {
-  EntriesRepository({required this.client, required this.sasUrl, required this.cacheFile});
+  EntriesRepository({
+    required this.client,
+    required this.sasUrl,
+    required this.cacheFile,
+    this.timeout = const Duration(seconds: 15),
+  });
 
   final http.Client client;
   final String sasUrl;
   final Future<File> Function() cacheFile;
+
+  /// Bez limitu by pomalá síť (captive portal) nechala appku viset místo zobrazení cache.
+  final Duration timeout;
 
   Future<LoadResult> load() async {
     String warning;
@@ -48,7 +56,7 @@ class EntriesRepository {
       if (sasUrl.isEmpty) {
         return const LoadFailed('Appka nemá nastavený přístup k datům (RUNWAY_SAS_URL).');
       }
-      final response = await client.get(blobUrl(sasUrl, documentBlob));
+      final response = await client.get(blobUrl(sasUrl, documentBlob)).timeout(timeout);
       if (response.statusCode == 200) {
         final body = utf8.decode(response.bodyBytes);
         final doc = _parse(body);
@@ -61,6 +69,8 @@ class EntriesRepository {
         final code => 'Chyba serveru ($code)',
       };
     } on FormatException {
+      warning = 'Stažená data jsou poškozená';
+    } on TypeError {
       warning = 'Stažená data jsou poškozená';
     } catch (_) {
       warning = 'Offline – zobrazuji uložená data';

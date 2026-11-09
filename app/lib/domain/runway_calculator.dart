@@ -12,6 +12,9 @@ const unexpectedNeed = 'nečekané';
 const _essentialNeed = 'nezbytné';
 const uncategorizedType = 'nezařazeno';
 
+/// Delší runway (100 let) už je prakticky „vystačí“ a datum by bylo nesmyslné.
+const maxRunwayMonths = 1200;
+
 class RunwayInput {
   const RunwayInput({
     required this.savings,
@@ -76,7 +79,10 @@ int _windowEnd(DateTime lastEntry) =>
 DateTime _addMonths(DateTime today, double months) {
   final whole = months.floor();
   final days = ((months - whole) * 30).round();
-  return DateTime(today.year, today.month + whole, today.day + days);
+  // Den oříznout na délku cílového měsíce (31. 1. + 1 měsíc = 28. 2., ne 3. 3.).
+  final lastDay = DateTime(today.year, today.month + whole + 1, 0).day;
+  final day = today.day > lastDay ? lastDay : today.day;
+  return DateTime(today.year, today.month + whole, day + days);
 }
 
 RunwayResult calculateRunway(EntriesDocument doc, RunwayInput input) {
@@ -146,6 +152,7 @@ ScenarioResult _scenario(
   double? months;
   if (hasData && monthlySpend - input.newMonthlyIncome > 0) {
     months = input.savings <= 0 ? 0 : input.savings / (monthlySpend - input.newMonthlyIncome);
+    if (months > maxRunwayMonths) months = null;
   }
   return ScenarioResult(
     scenario: scenario,

@@ -75,6 +75,25 @@ void main() {
     expect(cache.readAsStringSync(), body);
   });
 
+  test('slow server times out and falls back to cache', () async {
+    await cache.writeAsString(body);
+    final r = EntriesRepository(
+      client: MockClient((_) => Future.delayed(const Duration(seconds: 2), () => http.Response(body, 200))),
+      sasUrl: sas,
+      cacheFile: () async => cache,
+      timeout: const Duration(milliseconds: 50),
+    );
+    final result = await r.load();
+    expect((result as Loaded).fromCache, isTrue);
+    expect(result.warning, 'Offline – zobrazuji uložená data');
+  });
+
+  test('wrongly shaped document reported as corrupt', () async {
+    await cache.writeAsString(body);
+    final result = await repo((_) async => http.Response('{"entries": [{"date": 5}]}', 200)).load();
+    expect((result as Loaded).warning, 'Stažená data jsou poškozená');
+  });
+
   test('missing sas url fails clearly', () async {
     final r = EntriesRepository(
       client: MockClient((_) async => http.Response(body, 200)),

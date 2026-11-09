@@ -71,6 +71,17 @@ void main() {
     expect(find.text('∞ – vystačí'), findsNWidgets(3));
   });
 
+  testWidgets('cleared income field stays empty while typing', (tester) async {
+    final state = await pumpHome(tester, twoMonths);
+    final field = find.byKey(const Key('incomeField'));
+    await tester.enterText(field, '5000');
+    await tester.pump();
+    await tester.enterText(field, '');
+    await tester.pump();
+    expect(state.newIncome, 0);
+    expect(tester.widget<TextField>(field).controller!.text, '');
+  });
+
   testWidgets('tapping card shows breakdown', (tester) async {
     await pumpHome(tester, twoMonths);
     expect(find.text('volný čas'), findsNothing);

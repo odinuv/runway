@@ -45,7 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _sync(TextEditingController controller, double value) {
-    if (double.tryParse(controller.text) != value) {
+    // Prázdné pole odpovídá nule – nepřepisovat ho, ať jde pohodlně psát novou hodnotu.
+    final current = controller.text.isEmpty ? 0 : double.tryParse(controller.text);
+    if (current != value) {
       controller.text = value.round().toString();
     }
   }
