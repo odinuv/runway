@@ -19,14 +19,26 @@ class LlmClient(Protocol):
 
 
 class AzureLlmClient:
-    def __init__(self, endpoint: str, api_key: str, deployment: str, api_version: str = DEFAULT_API_VERSION):
-        self._client = AzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        deployment: str,
+        api_version: str = DEFAULT_API_VERSION,
+        client: AzureOpenAI | None = None,
+    ):
+        # Víc pokusů: nízká kapacita deploymentu vede při prvním běhu k 429.
+        self._client = client or AzureOpenAI(
+            azure_endpoint=endpoint, api_key=api_key, api_version=api_version, max_retries=6
+        )
         self._deployment = deployment
 
     def complete_json(self, system: str, user: str, schema: dict) -> dict:
         # Bez temperature: reasoning modely (gpt-5.x) podporují jen výchozí hodnotu.
+        # Nízké reasoning_effort stačí na výběr z výčtu a šetří tokeny i limit TPM.
         response = self._client.chat.completions.create(
             model=self._deployment,
+            reasoning_effort="low",
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             response_format={"type": "json_schema", "json_schema": {"name": "result", "strict": True, "schema": schema}},
         )

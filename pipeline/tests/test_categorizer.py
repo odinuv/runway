@@ -127,10 +127,75 @@ def test_run_categorize_saves_and_skips_done():
     now = datetime(2026, 11, 9, tzinfo=timezone.utc)
 
     done, left = run_categorize(store, cfg, llm, "gpt-x", 30, False, now)
-    assert (done, left) == (1, 0)
+    assert (done, left) == (1, [])
     assert len(llm.calls) == 1 and [it["note"] for it in llm.calls[0]["items"]] == ["a"]
     saved, _ = store.load_document()
     assert saved.model_config == {"excludedTypes": ["spoření a investice"]}
     assert all(e.category for e in saved.entries)
 
-    assert run_categorize(store, cfg, FakeLlm([]), "gpt-x", 30, False, now) == (0, 0)
+    assert run_categorize(store, cfg, FakeLlm([]), "gpt-x", 30, False, now) == (0, [])
+
+
+def _store_with(entries, model_config=None):
+    from fakes import InMemoryStore
+    from runway.document import Document, assign_ids
+
+    doc = Document.new()
+    doc.entries = assign_ids(entries)
+    doc.model_config = model_config or {}
+    return InMemoryStore(document=doc.to_json())
+
+
+NOW = __import__("datetime").datetime(2026, 11, 9, tzinfo=__import__("datetime").timezone.utc)
+
+
+def test_run_categorize_all_keeps_old_category_on_failure():
+    from runway.cli import run_categorize
+
+    old = {"kind": "expense", "type": "bydlení", "need": "vhodné"}
+    store = _store_with([make_entry(category=dict(old))])
+
+    def boom(items):
+        raise RuntimeError("429")
+
+    done, left = run_categorize(store, load_categories(CONFIG_PATH), FakeLlm([boom] * 2), "gpt-x", 30, True, NOW)
+    assert done == 0 and len(left) == 1
+    saved, _ = store.load_document()
+    assert saved.entries[0].category == old
+
+
+def test_run_categorize_without_document_creates_nothing():
+    from fakes import InMemoryStore
+    from runway.cli import run_categorize
+
+    store = InMemoryStore()
+    assert run_categorize(store, load_categories(CONFIG_PATH), FakeLlm([]), "gpt-x", 30, False, NOW) == (0, [])
+    assert store.document is None
+
+
+def test_run_categorize_updates_excluded_types_without_new_entries():
+    from runway.cli import run_categorize
+
+    store = _store_with([make_entry(category={"kind": "expense"})], {"excludedTypes": []})
+    run_categorize(store, load_categories(CONFIG_PATH), FakeLlm([]), "gpt-x", 30, False, NOW)
+    saved, _ = store.load_document()
+    assert saved.model_config["excludedTypes"] == ["spoření a investice"]
+
+
+def test_azure_client_uses_low_reasoning_and_retries():
+    from runway.categorizer import AzureLlmClient
+
+    captured = {}
+
+    class Completions:
+        def create(self, **kw):
+            captured.update(kw)
+            msg = type("M", (), {"content": '{"items": []}'})
+            return type("R", (), {"choices": [type("C", (), {"message": msg})]})
+
+    fake = type("Client", (), {"chat": type("Chat", (), {"completions": Completions()})()})()
+    client = AzureLlmClient("https://x", "k", "dep", client=fake)
+    assert client.complete_json("s", "u", {}) == {"items": []}
+    assert captured["reasoning_effort"] == "low"
+    assert captured["model"] == "dep"
+    assert AzureLlmClient("https://x.openai.azure.com", "k", "dep")._client.max_retries >= 5

@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from runway.categories import CategoryConfig, load_categories
 from runway.categorizer import AzureLlmClient, LlmClient, categorize
+from runway.entry import Entry
 from runway.importer import iso_utc, run_import
 from runway.storage import AzureBlobStore, ConcurrencyError, Store
 
@@ -40,16 +41,20 @@ def cmd_import(args: argparse.Namespace) -> int:
 
 def run_categorize(
     store: Store, cfg: CategoryConfig, llm: LlmClient, model: str, batch_size: int, all_entries: bool, now: datetime
-) -> tuple[int, int]:
-    """Kategorizuje záznamy bez kategorie (nebo všechny); po každé dávce ukládá. Vrací (hotovo, zbývá)."""
+) -> tuple[int, list[Entry]]:
+    """Kategorizuje záznamy bez kategorie (nebo všechny); po každé dávce ukládá.
+
+    Vrací (počet kategorizovaných, záznamy bez platné odpovědi). U `--all` zůstane
+    záznamu stará kategorie, dokud nepřijde platná nová.
+    """
     doc, etag = store.load_document()
-    if all_entries:
-        for e in doc.entries:
-            e.category = None
-    todo = [e for e in doc.entries if e.category is None]
+    if etag is None:
+        return 0, []  # dokument zakládá jen import (kvůli upozornění na initialBalance)
+    todo = doc.entries if all_entries else [e for e in doc.entries if e.category is None]
+    excluded_changed = doc.model_config.get("excludedTypes") != cfg.excluded_types
     doc.model_config = {**doc.model_config, "excludedTypes": cfg.excluded_types}
-    if not todo and etag is not None:
-        return 0, 0
+    if not todo and not excluded_changed:
+        return 0, []
 
     def save() -> None:
         nonlocal etag
@@ -58,7 +63,7 @@ def run_categorize(
 
     left = categorize(todo, cfg, llm, batch_size, iso_utc(now), model, save)
     save()
-    return len(todo) - len(left), len(left)
+    return len(todo) - len(left), left
 
 
 def cmd_categorize(args: argparse.Namespace) -> int:
@@ -66,7 +71,9 @@ def cmd_categorize(args: argparse.Namespace) -> int:
     llm = AzureLlmClient(os.environ["AZURE_OPENAI_ENDPOINT"], os.environ["AZURE_OPENAI_API_KEY"], deployment)
     cfg = load_categories(PIPELINE_DIR / "config" / "categories.json")
     done, left = run_categorize(_store(), cfg, llm, deployment, args.batch_size, args.all, datetime.now(timezone.utc))
-    print(f"Kategorizováno: {done}, bez kategorie: {left}")
+    print(f"Kategorizováno: {done}, bez nové kategorie: {len(left)}")
+    for e in left:
+        print(f"  {e.date.isoformat()} {e.amount_cents / 100:>12.2f} {e.note or e.message}", file=sys.stderr)
     return 1 if left else 0
 
 
