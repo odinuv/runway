@@ -32,3 +32,16 @@ Předpoklad: provisioning je aplikovaný a `pipeline/.env` existuje (`provisioni
 
 Stejné období nahrávejte jen v jednom formátu (CSV, nebo GPC). Mezi formáty se duplicity nepoznají.
 Číslo vlastního účtu pro CSV lze nastavit v `.env` jako `RUNWAY_OWN_ACCOUNT`.
+
+## Appka
+
+Předpoklad: `provisioning/write-env.sh` zapsal `app/.dart-defines.json` s `RUNWAY_SAS_URL`.
+
+```bash
+cd app
+dart run tool/hash_password.dart '<heslo>'   # doplní sůl a hash hesla do .dart-defines.json
+flutter test
+flutter build apk --release --dart-define-from-file=.dart-defines.json
+```
+
+APK je v `app/build/app/outputs/flutter-apk/app-release.apk`. Nainstalujte ho přes `adb install`, nebo ho zkopírujte do telefonu a povolte instalaci z neznámých zdrojů. Release build je podepsaný debug klíčem, pro ruční instalaci to stačí.
