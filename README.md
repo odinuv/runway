@@ -19,3 +19,16 @@ bash write-env.sh                               # zapíše pipeline/.env a app/.
 ```
 
 Model pro kategorizaci je ve výchozím stavu `gpt-5.4-mini` se SKU `DataZoneStandard` (data se zpracují v EU). Změníte ho proměnnými `openai_model_name`, `openai_model_version` a `openai_deployment_sku`.
+
+## Pipeline
+
+Předpoklad: provisioning je aplikovaný a `pipeline/.env` existuje (`provisioning/write-env.sh`).
+
+1. Nahrajte výpis do kontejneru `upload` pod `inbox/`, např.:
+   `az storage blob upload --connection-string "$AZURE_STORAGE_CONNECTION_STRING" -c upload -n inbox/vypis.csv -f vypis.csv`
+2. `cd pipeline && uv run runway import` – přidá nové záznamy do `app/entries.json` a přesune výpis do `processed/`.
+3. Při prvním importu doplňte do `entries.json` ručně `initialBalance` (stáhnout, upravit, nahrát zpět).
+4. `uv run runway categorize` – doplní kategorie záznamům, které je ještě nemají. `--all` překategorizuje vše (např. po změně `config/categories.json`).
+
+Stejné období nahrávejte jen v jednom formátu (CSV, nebo GPC). Mezi formáty se duplicity nepoznají.
+Číslo vlastního účtu pro CSV lze nastavit v `.env` jako `RUNWAY_OWN_ACCOUNT`.
