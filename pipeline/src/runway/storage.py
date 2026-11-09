@@ -59,6 +59,9 @@ class AzureBlobStore:
         target.start_copy_from_url(source.url)
         while target.get_blob_properties().copy.status == "pending":
             time.sleep(0.5)
+        status = target.get_blob_properties().copy.status
+        if status != "success":
+            raise RuntimeError(f"Kopie {name} do processed/ skončila stavem {status}")
         source.delete_blob()
 
     def load_document(self) -> tuple[Document, str | None]:
