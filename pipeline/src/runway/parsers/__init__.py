@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
+from runway.document import assign_ids
 from runway.entry import Entry
 from runway.parsers import fio_csv, gpc
 
@@ -23,4 +24,4 @@ def parse(data: bytes, filename: str, own_account: str | None) -> list[Entry]:
     parser = _PARSERS.get(suffix)
     if parser is None:
         raise UnsupportedFormat(f"Nepodporovaný formát souboru: {filename}")
-    return parser(data, PurePosixPath(filename).name, own_account)
+    return assign_ids(parser(data, PurePosixPath(filename).name, own_account))
