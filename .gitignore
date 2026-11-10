@@ -11,3 +11,6 @@ __pycache__/
 app/.dart-defines.json
 app/build/
 app/.dart_tool/
+
+# skutečné výpisy – nikdy necommitovat
+/pohyby.*
