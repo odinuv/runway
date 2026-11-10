@@ -74,7 +74,8 @@ class AzureBlobStore:
     def save_document(self, doc: Document, etag: str | None) -> str:
         blob = self._app.get_blob_client(DOCUMENT_BLOB)
         if etag is None:
-            conditions = {"etag": "*", "match_condition": MatchConditions.IfMissing}
+            # IfMissing nastaví If-None-Match: * sám; etag navíc by SDK propustilo až do HTTP klienta.
+            conditions = {"match_condition": MatchConditions.IfMissing}
         else:
             conditions = {"etag": etag, "match_condition": MatchConditions.IfNotModified}
         try:
