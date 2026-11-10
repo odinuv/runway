@@ -1,0 +1,25 @@
+[project]
+name = "runway"
+version = "0.1.0"
+description = "Import a kategorizace bankovních výpisů pro Runway"
+authors = [
+    { name = "Odin", email = "odinuv@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "azure-storage-blob>=12.31.1",
+    "openai>=3.46.0",
+    "python-dotenv>=1.2.4",
+]
+
+[project.scripts]
+runway = "runway.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.17,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

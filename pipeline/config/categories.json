@@ -1,0 +1,29 @@
+{
+  "expenseTypes": [
+    {"id": "bydlení", "description": "nájem, hypotéka, fond oprav, zálohy na služby k bytu, vodné a stočné"},
+    {"id": "energie", "description": "elektřina, plyn, teplo"},
+    {"id": "živobytí", "description": "potraviny, drogerie, běžné nákupy v supermarketech"},
+    {"id": "doprava", "description": "pohonné hmoty, jízdenky, servis a údržba auta, dálniční známka, parkování"},
+    {"id": "zdraví", "description": "lékárna, lékař, zubař, brýle"},
+    {"id": "děti", "description": "školka, škola, kroužky, dětské potřeby"},
+    {"id": "pojištění", "description": "životní, majetkové, povinné ručení, havarijní pojištění"},
+    {"id": "poplatky a předplatné", "description": "bankovní poplatky, koncesionářské poplatky, streamovací a jiné předplatné, daně a úřední poplatky"},
+    {"id": "komunikace", "description": "mobilní tarif, internet"},
+    {"id": "oblečení", "description": "oblečení a obuv"},
+    {"id": "volný čas", "description": "restaurace, kavárny, kino, sport, koníčky, elektronika"},
+    {"id": "dovolená", "description": "ubytování, letenky, cestovní kanceláře, výlety"},
+    {"id": "dary", "description": "dárky, příspěvky, charita"},
+    {"id": "spoření a investice", "description": "převody na spořicí účet, investice, penzijní a stavební spoření", "excludeFromModel": true},
+    {"id": "ostatní", "description": "cokoliv, co nepatří jinam, výběry z bankomatu"}
+  ],
+  "needs": [
+    {"id": "nezbytné", "description": "bez toho domácnost nefunguje: bydlení, energie, jídlo, základní doprava, léky"},
+    {"id": "vhodné", "description": "rozumné, ale dá se omezit: pojištění, internet, běžné oblečení"},
+    {"id": "zbytné", "description": "dá se bez toho obejít: restaurace, dovolená, předplatné, koníčky"},
+    {"id": "nečekané", "description": "jednorázový neplánovaný výdaj – oprava auta, spotřebiče, náhlý zdravotní výdaj"}
+  ],
+  "incomeTypes": [
+    {"id": "pravidelný", "description": "výplata, přeposlaná výplata, pravidelný příjem"},
+    {"id": "nepravidelný", "description": "přeplatky, vratky, reklamace, jednorázové příjmy"}
+  ]
+}
